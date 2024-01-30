@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webcam Photo Upload</title>
+</head>
+<body>
+    <h2>Upload Photo</h2>
+    <input type="file" accept="image/*" id="photoUpload">
+    <button onclick="uploadPhoto()">Upload Photo</button>
+    
+    <h2>Webcam</h2>
+    <video id="webcam" autoplay playsinline width="640" height="480"></video>
+    <button onclick="captureAndUpload()">Capture and Upload</button>
+    <p id="detectionResult"></p> <!-- Element to display detection result -->
+    
+    <script>
+        const video = document.getElementById('webcam');
+
+        // Request access to the webcam
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                })
+                .catch(function (error) {
+                    console.log("Something went wrong!");
+                });
+        }
+
+        // Function to capture a frame from the webcam and upload it
+        function captureAndUpload() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(function(blob) {
+                const formData = new FormData();
+                formData.append('photo', blob, 'webcam.jpg');
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('detectionResult').textContent = data.message;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+            }, 'image/jpeg');
+        }
+
+        // Function to upload a photo manually
+        function uploadPhoto() {
+            const input = document.getElementById('photoUpload');
+            const file = input.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('photo', file);
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('detectionResult').textContent = data.message;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
